@@ -1,31 +1,43 @@
 #!/usr/bin/env python3
-#server/seed.py
+# server/seed.py
+
 from random import choice as rc
 from faker import Faker
 
 from app import app
 from models import db, Pet
 
-with app.app_context():
+def seed_pets(num_pets=10):
+    """
+    Seed the 'pets' table with random data using Faker.
 
-    # Create and initialize a faker generator
-    fake = Faker()
+    Args:
+        num_pets (int): Number of pets to create (default is 10).
+    """
+    with app.app_context():
+        # Create and initialize a Faker generator
+        fake = Faker()
 
-    # Delete all rows in the "pets" table
-    Pet.query.delete()
+        # Delete all existing rows in the "pets" table
+        Pet.query.delete()
 
-    # Create an empty list
-    pets = []
+        # List of species to choose from
+        species = ['Dog', 'Cat', 'Chicken', 'Hamster', 'Turtle']
 
-    species = ['Dog', 'Cat', 'Chicken', 'Hamster', 'Turtle']
+        # Generate and add Pet instances to the session
+        pets = []
+        for _ in range(num_pets):
+            pet = Pet(name=fake.first_name(), species=rc(species))
+            pets.append(pet)
+            db.session.add(pet)
 
-    # Add some Pet instances to the list
-    for n in range(10):
-        pet = Pet(name=fake.first_name(), species=rc(species))
-        pets.append(pet)
+        try:
+            # Commit the session to persist changes
+            db.session.commit()
+            print(f'Successfully seeded {num_pets} pets.')
+        except Exception as e:
+            db.session.rollback()
+            print(f'Error occurred during seeding: {e}')
 
-    # Insert each Pet in the list into the "pets" table
-    db.session.add_all(pets)
-
-    # Commit the transaction
-    db.session.commit()
+if __name__ == '__main__':
+    seed_pets()
